@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build: .
+    image: mcp-server:latest
+    container_name: mcp-server
+    ports:
+      - "8080:8080"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+    # Mount the source code and output directories
+    # update the paths below to match your local setup
+    # The source directory is mounted as read-only to prevent accidental modifications from within the container.
+    # The output directory is mounted as read-write to allow the server to write results back to the host.
+      - /Users/joshuajoubert/Downloads:/app/source:ro
+      - /Users/joshuajoubert/CS588/MCP-server/output:/app/output:rw
+    networks:
+      - mcp-agent-ui
+    restart: unless-stopped
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - mcp-agent-ui
+    restart: unless-stopped

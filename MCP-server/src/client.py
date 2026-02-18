@@ -21,7 +21,7 @@ async def call_all_tools():
         # 2. Test list_files
         print("\n2. Calling list_files...")
         try:
-            result = await client.call_tool("list_files", {"directory": "."})
+            result = await client.call_tool("list_files")
             print(f"   ✓ Files in current directory: {result}")
         except Exception as e:
             print(f"   ✗ Error: {e}")
@@ -31,8 +31,7 @@ async def call_all_tools():
         try:
             result = await client.call_tool("create_file", {
                 "file_name": "test_client.txt",
-                "content": "This file was created by the MCP client",
-                "directory": "."
+                "content": "This file was created by the MCP client"
             })
             print(f"   ✓ {result}")
         except Exception as e:
@@ -42,8 +41,7 @@ async def call_all_tools():
         print("\n4. Calling get_file_content...")
         try:
             result = await client.call_tool("get_file_content", {
-                "file_name": "test_client.txt",
-                "directory": "."
+                "file_name": "MCP_Quad.pptx"
             })
             print(f"   ✓ File content: '{result}'")
         except Exception as e:
@@ -53,8 +51,7 @@ async def call_all_tools():
         print("\n5. Calling delete_file...")
         try:
             result = await client.call_tool("delete_file", {
-                "file_name": "test_client.txt",
-                "directory": "."
+                "file_name": "test_client.txt"
             })
             print(f"   ✓ {result}")
         except Exception as e:

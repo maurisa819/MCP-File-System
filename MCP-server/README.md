@@ -45,7 +45,9 @@ You should see `(mcp)` appear in your terminal prompt.
 pip install --upgrade pip
 pip install fastmcp
 pip install asyncio
-pip install pytest
+pip install python-docx
+pip install python-pptx
+pip install openpyxl
 ```
 
 ## Running the Server
@@ -53,11 +55,10 @@ pip install pytest
 ### Start the server with FastMCP
 ```bash
 cd src
-fastmcp run server.py --reload --transport http --port 8080
+fastmcp run server.py --transport http --port 8080
 ```
 
 **Options explained:**
-- `--reload`: Automatically restart the server when changes are detected
 - `--transport http`: Use HTTP as the transport protocol
 - `--port 8080`: Run the server on port 8080
 
@@ -84,15 +85,82 @@ mcp\Scripts\activate
 python client.py
 ```
 
-
 ## Available Tools
 
 The server provides the following tools:
 - `get_os_info`: Retrieves operating system information
 - `list_files`: Lists files in a specified directory
 - `create_file`: Creates a new file with specified content
+- `delete_file`: Deletes a specified file
+- `get_file_content`: Reads and returns the content of a file
 
 ## Deactivate Virtual Environment
 ```bash
 deactivate
+```
+
+## Docker Deployment
+
+### Build Docker Image
+Build the Docker image for the MCP server:
+```bash
+docker build -t mcp-server:latest .
+```
+
+### Run Docker Container
+Run the MCP server in a Docker container:
+```bash
+docker run -p 8080:8080 mcp-server:latest
+```
+
+**Port mapping:**
+- `-p 8080:8080`: Maps port 8080 on your host to port 8080 in the container
+
+The server will be available at `http://localhost:8080`.
+
+### Run Container with Custom Port
+To run the server on a different port:
+```bash
+docker run -p 9000:8080 mcp-server:latest
+```
+This maps port 9000 on your host to port 8080 in the container.
+
+### Stop Docker Container
+To stop a running container, use:
+```bash
+docker ps  # Find the container ID
+docker stop <container-id>
+```
+
+### Remove Docker Image
+```bash
+docker rmi mcp-server:latest
+```
+
+### Using Docker Compose (Recommended)
+Docker Compose provides an easier way to manage the container. A `docker-compose.yml` file is included.
+
+**Start the server:**
+```bash
+docker-compose up -d
+```
+
+**View logs (mcsp-server):**
+```bash
+docker-compose logs -f mcp-server
+```
+
+**View logs (ollama):**
+```bash
+docker-compose logs -f ollama
+```
+
+**Stop the server:**
+```bash
+docker-compose down
+```
+
+**Rebuild the image:**
+```bash
+docker-compose up -d --build
 ```
