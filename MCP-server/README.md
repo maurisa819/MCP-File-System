@@ -48,6 +48,7 @@ pip install asyncio
 pip install python-docx
 pip install python-pptx
 pip install openpyxl
+pip install PyPDF2
 ```
 
 ## Running the Server

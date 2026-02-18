@@ -6,6 +6,7 @@ from io import StringIO
 from docx import Document as DocxDocument
 from pptx import Presentation
 from openpyxl import load_workbook
+from PyPDF2 import PdfReader
 
 logging.basicConfig(level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -153,6 +154,7 @@ def get_file_content(file_name: str, directory: str = source_dir) -> str:
     - Word documents (.docx, .doc)
     - PowerPoint presentations (.pptx, .ppt)
     - Excel spreadsheets (.xlsx, .xls)
+    - PDF documents (.pdf)
     
     params:
         file_name: The name of the file to read.
@@ -246,6 +248,18 @@ def get_file_content(file_name: str, directory: str = source_dir) -> str:
         elif file_ext in ['.xls']:
             logger.warning(f"Legacy .xls format not fully supported. Please use .xlsx format.")
             return ""
+        
+        elif file_ext in ['.pdf']:
+            try:
+                pdf_reader = PdfReader(file_path)
+                content = []
+                for page_num, page in enumerate(pdf_reader.pages, 1):
+                    content.append(f"--- Page {page_num} ---")
+                    content.append(page.extract_text())
+                return '\n'.join(content)
+            except Exception as e:
+                logger.error(f"Error reading PDF file {file_path}: {e}")
+                return ""
         
         else:
             logger.warning(f"Unsupported file format: {file_ext}")
