@@ -1,12 +1,7 @@
 from fastmcp import FastMCP
 import logging
 import os
-import csv
-from io import StringIO
-from docx import Document as DocxDocument
-from pptx import Presentation
-from openpyxl import load_workbook
-from PyPDF2 import PdfReader
+from fileTypeReader import FileTypeReader
 
 logging.basicConfig(level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -155,6 +150,8 @@ def get_file_content(file_name: str, directory: str = source_dir) -> str:
     - PowerPoint presentations (.pptx, .ppt)
     - Excel spreadsheets (.xlsx, .xls)
     - PDF documents (.pdf)
+    - Image files (.jpg, .jpeg, .png, .gif, .bmp, .webp, .tiff, .ico - returned as base64)
+    - SVG files (.svg)
     
     params:
         file_name: The name of the file to read.
@@ -162,117 +159,8 @@ def get_file_content(file_name: str, directory: str = source_dir) -> str:
     
     returns: The content of the file as a string. If the file cannot be read, an empty string is returned.
     """
-
-    logger.info(f"Reading file content from {file_name} in directory {directory}")
-    try:
-        # Check if the file exists before attempting to read it
-        file_path = os.path.join(directory, file_name)
-        if not os.path.isfile(file_path):
-            logger.error(f"File not found: {file_path}")
-            return ""
-
-        # Get file extension
-        _, file_ext = os.path.splitext(file_name)
-        file_ext = file_ext.lower()
-
-        # Handle different file types
-        if file_ext == '.txt':
-            with open(file_path, 'r') as file:
-                return file.read()
-        
-        elif file_ext == '.csv':
-            content = StringIO()
-            try:
-                with open(file_path, 'r') as file:
-                    reader = csv.reader(file)
-                    for row in reader:
-                        content.write(','.join(row) + '\n')
-                return content.getvalue()
-            except Exception as e:
-                logger.error(f"Error reading CSV file {file_path}: {e}")
-                return ""
-        
-        elif file_ext in ['.docx']:
-            try:
-                doc = DocxDocument(file_path)
-                content = []
-                for para in doc.paragraphs:
-                    content.append(para.text)
-                for table in doc.tables:
-                    for row in table.rows:
-                        row_content = [cell.text for cell in row.cells]
-                        content.append(' | '.join(row_content))
-                return '\n'.join(content)
-            except Exception as e:
-                logger.error(f"Error reading DOCX file {file_path}: {e}")
-                return ""
-        
-        elif file_ext in ['.doc']:
-            logger.warning(f"Legacy .doc format not fully supported. Please use .docx format.")
-            return ""
-        
-        elif file_ext in ['.pptx']:
-            try:
-                prs = Presentation(file_path)
-                content = []
-                for slide_num, slide in enumerate(prs.slides, 1):
-                    content.append(f"--- Slide {slide_num} ---")
-                    for shape in slide.shapes:
-                        if hasattr(shape, "text"):
-                            if shape.text.strip():
-                                content.append(shape.text)
-                return '\n'.join(content)
-            except Exception as e:
-                logger.error(f"Error reading PPTX file {file_path}: {e}")
-                return ""
-        
-        elif file_ext in ['.ppt']:
-            logger.warning(f"Legacy .ppt format not fully supported. Please use .pptx format.")
-            return ""
-        
-        elif file_ext in ['.xlsx']:
-            try:
-                wb = load_workbook(file_path)
-                content = []
-                for sheet_name in wb.sheetnames:
-                    ws = wb[sheet_name]
-                    content.append(f"--- Sheet: {sheet_name} ---")
-                    for row in ws.iter_rows(values_only=True):
-                        row_content = [str(cell) if cell is not None else '' for cell in row]
-                        content.append(' | '.join(row_content))
-                return '\n'.join(content)
-            except Exception as e:
-                logger.error(f"Error reading XLSX file {file_path}: {e}")
-                return ""
-        
-        elif file_ext in ['.xls']:
-            logger.warning(f"Legacy .xls format not fully supported. Please use .xlsx format.")
-            return ""
-        
-        elif file_ext in ['.pdf']:
-            try:
-                pdf_reader = PdfReader(file_path)
-                content = []
-                for page_num, page in enumerate(pdf_reader.pages, 1):
-                    content.append(f"--- Page {page_num} ---")
-                    content.append(page.extract_text())
-                return '\n'.join(content)
-            except Exception as e:
-                logger.error(f"Error reading PDF file {file_path}: {e}")
-                return ""
-        
-        else:
-            logger.warning(f"Unsupported file format: {file_ext}")
-            # Try to read as plain text for unknown formats
-            try:
-                with open(file_path, 'r') as file:
-                    return file.read()
-            except:
-                return ""
-        
-    except Exception as e:
-        logger.error(f"Error reading file {file_path}: {e}")
-        return ""
+    file_reader = FileTypeReader()
+    return file_reader.read_file(file_name, directory)
 
 # 5. Make the server runnable
 if __name__ == "__main__":
