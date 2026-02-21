@@ -13,6 +13,7 @@ RUN pip install --upgrade pip && \
 
 # Copy the server code into the container
 COPY src/server.py .
+COPY src/fileTypeReader.py .
 
 # Expose the port the server runs on
 EXPOSE 8080
