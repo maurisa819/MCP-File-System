@@ -9,11 +9,21 @@ logger = logging.getLogger("fastmcp.server")
 
 os.environ["SOURCE_DIR"] = os.path.join(os.getcwd(), "source")
 source_dir = os.environ["SOURCE_DIR"]
+
+os.environ["OUTPUT_DIR"] = os.path.join(os.getcwd(), "output")
+output_dir = os.environ["OUTPUT_DIR"]
+
 if not os.path.exists(source_dir):
     logger.info(f"Creating source directory at {source_dir}")
     os.makedirs(source_dir)
 else:
     logger.info(f"Source directory already exists at {source_dir}")
+
+if not os.path.exists(output_dir):
+    logger.info(f"Creating output directory at {output_dir}")
+    os.makedirs(output_dir)
+else:
+    logger.info(f"Output directory already exists at {output_dir}")
 
 def set_working_directory(directory: str = None) -> str:
     """Sets the working directory for file operations.
@@ -94,7 +104,7 @@ def list_files(directory: str = source_dir) -> list:
         return []
     
 @mcp.tool("create_file")
-def create_file(file_name: str, content: str = "", directory: str = source_dir) -> str:
+def create_file(file_name: str, content: str = "", directory: str = output_dir) -> str:
     """Creates a new file with the specified content.
     
     params:
@@ -116,7 +126,7 @@ def create_file(file_name: str, content: str = "", directory: str = source_dir) 
         return f"Error creating file '{file_name}': {e}"
     
 @mcp.tool("delete_file")
-def delete_file(file_name: str, directory: str = source_dir) -> str:
+def delete_file(file_name: str, directory: str = output_dir) -> str:
     """Deletes a specified file.
     
     params:

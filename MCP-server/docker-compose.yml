@@ -27,3 +27,7 @@ services:
     networks:
       - mcp-agent-ui
     restart: unless-stopped
+
+networks:
+  mcp-agent-ui:
+    driver: bridge
