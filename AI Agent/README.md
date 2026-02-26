@@ -2,15 +2,15 @@
 
 This project runs:
 
-- ✅ MCP Server (FastMCP)
-- ✅ Ollama (LLM backend)
-- ✅ LangGraph Agent (Python)
+- MCP Server (FastMCP)
+- Ollama (LLM backend)
+- LangGraph Agent (Python)
 
 Both the MCP server and Ollama run inside Docker using `docker-compose`.
 
 ---
 
-# 🧱 Architecture
+# Architecture
 
 Terminal 1 → Docker Compose (MCP + Ollama)  
 Terminal 2 → LangGraph Agent (Python)
