@@ -1,52 +1,92 @@
-# LangGraph AI Agent (MCP + Ollama)
+# LangGraph AI Agent (MCP + Ollama via Docker Compose)
 
-This agent is a LangGraph-based chatbot that can call tools from our FastMCP server
-(e.g., list files, read file content, create/delete files).  
-The LLM runs locally via Ollama (Docker).
+This project runs:
 
----
+- ✅ MCP Server (FastMCP)
+- ✅ Ollama (LLM backend)
+- ✅ LangGraph Agent (Python)
 
-## Prerequisites
-
-- Python 3.13 or higher
-- MCP Server running on HTTP (default: http://127.0.0.1:8080/mcp)
-- Ollama running (default: http://localhost:11434)
+Both the MCP server and Ollama run inside Docker using `docker-compose`.
 
 ---
 
-## Setup (pip / venv)
+# 🧱 Architecture
 
-### 1. Navigate to the agent folder
+Terminal 1 → Docker Compose (MCP + Ollama)  
+Terminal 2 → LangGraph Agent (Python)
+
+Everything runs locally.
+
+---
+
+# Prerequisites
+
+Install:
+
+- Python 3.10+ (3.13 recommended)
+- Docker Desktop (must be running)
+
+
+---
+
+# Step 1 — Start MCP + Ollama (Docker Compose)
+
+Open **Terminal 1** in the root project folder (where `docker-compose.yml` is located).
+
+## Build containers (first time only)
 
 ```bash
-cd /path/to/AI Agent
+docker compose build
 ```
+## Build containers (first time only) and Start Docker
+```bash
+docker compose up -d --build
+```
+## Load the Ollama model
+```bash
+docker exec -it ollama ollama pull llama3.1
+```
+You can verify its pulled by typing:
+```bash
+docker exec -it ollama ollama list
+```
+and it should show:
+llama3.1
 
-### 2. Create and activate a virtual environment (if not already present)
 
-#### macOS and Linux
+# Step 2 — Run AI Agent
+Open **Terminal 2** in the root project folder (where `LG-Agent.py` is located)
 
+# Create and Activate a virtual environment
+macOS / Linux 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
-
-#### Windows
-
+Windows 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
 ```
 
-### 3. Install dependencies
-
+## Install Dependencies
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 4. Run the Agent
-
+## Run the Agent
 ```bash
 python LG-Agent.py
 ```
+
+#Example Usage
+User: hello
+Assistant: Hi there! How can I help?
+
+User: list files
+Assistant: Run 'list_files'? (yes/no)
+
+User: yes
+Assistant: You have a file named "test.txt" in your home directory.
+
