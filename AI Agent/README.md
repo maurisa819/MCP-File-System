@@ -33,11 +33,7 @@ Install:
 
 Open **Terminal 1** in the root project folder (where `docker-compose.yml` is located).
 
-## Build containers (first time only)
 
-```bash
-docker compose build
-```
 ## Build containers (first time only) and Start Docker
 ```bash
 docker compose up -d --build
