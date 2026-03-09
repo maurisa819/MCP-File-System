@@ -110,7 +110,6 @@ def add_tool_confirmation_to_dict(id: str, args: dict, user_confirmation: str) -
     a confirmation prior to executing the tool."""
     
     if (confirmed_tool_calls.get(id)):
-        print(f"Tool call with id '{id}' is already in the confirmed_tool_calls dictionary, skipping addition.\n")
         return
 
     tool_call_id = id
