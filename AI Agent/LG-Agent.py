@@ -97,30 +97,75 @@ def confirmation_check(user_input: str) -> str:
 
     return "invalid"
 
+# Get tool_call_id
+def get_tool_call_id(tool_call: dict) -> str:
+    """Generates a unique id for the tool call, in this case we get a hash of the tool name and arguments,
+      in a production system you might want to use a more robust method for generating unique ids."""
+    return f"{tool_call['name']}_{hash(frozenset(tool_call.get('args', {}).items()))}"
+
+confirmed_tool_calls = {} #This will hold the tool calls that have been confirmed by the user and are waiting to be executed
+def add_tool_confirmation_to_dict(id: str, args: dict, user_confirmation: str) -> str:
+    """After the LLM calls a tool, this node adds the tool call adds the tool call with parameters and the user's 
+    answer to the confirmation to the confirmed_tool_calls dict, this will be used later to determine whether to ask for 
+    a confirmation prior to executing the tool."""
+    
+    if (confirmed_tool_calls.get(id)):
+        print(f"Tool call with id '{id}' is already in the confirmed_tool_calls dictionary, skipping addition.\n")
+        return
+
+    tool_call_id = id
+    confirmed_tool_calls[tool_call_id] = {"tool_call": {"id": id, "args": args}, "user_confirmation": user_confirmation}
+
+
 #Nodes in Graph
 def tool_calling_llm(state:State)-> str:
     """ LLM reads the message from the user and decides which tool to call, 
     It does not execute the tool at this stage,"""
+    print("Assistant: LLM is processing user input...")
     response = llm_with_tools.invoke(state["messages"])
-    return {"messages":state["messages"]+[response]}
+    return {"messages":state["messages"] + [response]}
 
 def user_confirmation(state:State) -> str:
     """The agent asks the user for confirmation before executing the tool, 
     and waits for the user's response."""
+
     last_message = state["messages"][-1]
     tool_calls = getattr(last_message, "tool_calls", None)
 
     #No tool calls -> No confirmation needed
     if not tool_calls:
+        print("Assistant: No tool calls detected. No confirmation needed.")
         return state
     
+    # check to see if the tool call has already been confirmed by the user, 
+    # if it has, skip asking for confirmation and go straight to execution
+    for tc in tool_calls:
+        tool_call_id = get_tool_call_id(tc)
+        confirmation_record = confirmed_tool_calls.get(tool_call_id)
+        if confirmation_record and confirmation_record["user_confirmation"] == "confirm":
+            pending_action = []
+            for tc in tool_calls:
+                tool_call_id = get_tool_call_id(tc)
+                pending_action.append({
+                    "id": tool_call_id,
+                    "tool_name": tc["name"],
+                    "tool_args": tc.get("args", {}),
+                    "confirmed": "true"
+                })
+            return {
+                "pending_action": pending_action
+            }
+        
+    print("Assistant: Asking user for confirmation before executing tool...")
+
     #For one or multiple tool calls
     queue = []
     for tc in tool_calls:
         queue.append({
-        "tool_name": tc["name"],
-        "tool_args": tc.get("args", {}),
-        "confirmation_message": f"The agent wants to execute the tool '{tc['name']}' with arguments {tc.get('args', {})}. Do you confirm? (yes/no)"
+            "id": get_tool_call_id(tc),
+            "tool_name": tc["name"],
+            "tool_args": tc.get("args", {}),
+            "confirmed": "false"
         })
     
     first_call = queue[0]
@@ -138,8 +183,14 @@ async def execute_tool(state:State) -> str:
     if not queue:
         return state
 
+    tool_confirmation = confirmed_tool_calls.get(queue[0]["id"])
     user_text = state["messages"][-1].content
+    if user_text == '' and tool_confirmation is not None:
+        user_text = tool_confirmation["user_confirmation"]
+
     decision = confirmation_check(user_text)
+    #This adds the tool call and the user's decision to the confirmed_tool_calls dict
+    add_tool_confirmation_to_dict(queue[0]["id"], queue[0]["tool_args"], decision) 
 
     if decision == "deny":
         return {"messages": state["messages"] + [AIMessage(content="Canceled. No further tools executed.")], "pending_action": []}
@@ -158,7 +209,7 @@ async def execute_tool(state:State) -> str:
     )
 
     # If more calls remain, they will be processed in the next iteration after user confirmation
-    return {"messages": state["messages"] +[tool_calling_msg], "pending_action": queue}
+    return {"messages": state["messages"] + [tool_calling_msg], "pending_action": queue}
 
 def confirm_next(state: State) -> str:
     """Checks the user's response to the confirmation message and routes accordingly."""
@@ -177,6 +228,13 @@ def confirm_next(state: State) -> str:
 def route_start(state: State) -> str:
     """If tools are waiting for confirmation route to execute_tool, otherwise route to tool_calling_llm."""
     return "execute_tool" if state.get("pending_action") else "tool_calling_llm"
+
+def route_to_tool(state: State) -> str:
+    """If the LLM called a tool, route to the tool node to execute it, otherwise route back to waiting for the user's message."""
+    pending_action = state.get("pending_action", [])
+    action = pending_action[0] if pending_action else None
+    confirmed = action["confirmed"]
+    return "execute_tool" if confirmed == "true" else END
 
 def route_after_tool_call(state: State) -> str:
     """After the LLM calls a tool, route to user_confirmation to ask the user for confirmation before executing the tool."""
@@ -213,7 +271,7 @@ graph.add_conditional_edges(START, route_start, {"execute_tool": "execute_tool",
 graph.add_conditional_edges("tool_calling_llm", route_after_tool_call, {"user_confirmation": "user_confirmation", END: END})
 
 #After the LLM calls a tool, if there is a tool call, ask the user for confirmation, otherwise go back to waiting for the user's message
-graph.add_edge("user_confirmation", END)
+graph.add_conditional_edges("user_confirmation", route_to_tool, {"execute_tool": "execute_tool", END: END})
 
 #After asking the user for confirmation, if there is a tool call, execute the tool, otherwise go back to waiting for the user's message
 graph.add_conditional_edges("execute_tool", route_after_execute_tool, {"tools": "tools", END: END})
