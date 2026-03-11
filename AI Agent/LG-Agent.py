@@ -124,20 +124,17 @@ def tool_calling_llm(state:State)-> str:
     response = llm_with_tools.invoke(state["messages"])
     return {"messages":state["messages"] + [response]}
 
-def user_confirmation(state:State) -> str:
-    """The agent asks the user for confirmation before executing the tool, 
-    and waits for the user's response."""
-
+def tools_condition(state:State) -> str:
+    """This is a condition node that checks whether the LLM called a tool and whether that tool call has been confirmed 
+    by the user, it routes accordingly."""
     last_message = state["messages"][-1]
     tool_calls = getattr(last_message, "tool_calls", None)
 
-    #No tool calls -> No confirmation needed
+    #print(f"debug: (tool_condition) Tool calls detected: {last_message}")
+
     if not tool_calls:
-        print("Assistant: No tool calls detected. No confirmation needed.")
         return state
-    
-    # check to see if the tool call has already been confirmed by the user, 
-    # if it has, skip asking for confirmation and go straight to execution
+
     for tc in tool_calls:
         tool_call_id = get_tool_call_id(tc)
         confirmation_record = confirmed_tool_calls.get(tool_call_id)
@@ -154,6 +151,23 @@ def user_confirmation(state:State) -> str:
             return {
                 "pending_action": pending_action
             }
+
+    return {"messages":state["messages"]}
+
+def user_confirmation(state:State) -> str:
+    """The agent asks the user for confirmation before executing the tool, 
+    and waits for the user's response."""
+
+    last_message = state["messages"][-1]
+    tool_calls = getattr(last_message, "tool_calls", None)
+
+    #print(f"debug: (user_confirmation) Last message: {last_message}")
+    #print(f"debug: (user_confirmation) Tool calls detected: {tool_calls}")
+
+    #No tool calls -> No confirmation needed
+    if not tool_calls:
+        print("Assistant: No tool calls detected. No confirmation needed.")
+        return state
         
     print("Assistant: Asking user for confirmation before executing tool...")
 
@@ -171,7 +185,7 @@ def user_confirmation(state:State) -> str:
 
     return {
         "messages": state["messages"] +[
-            AIMessage(content=f"Run '{first_call['tool_name']}'? (yes/no)")
+            AIMessage(content=f"Run '{first_call['tool_name']}' with {first_call['tool_args']}? (yes/no)")
         ],
         "pending_action": queue
     }
@@ -224,33 +238,47 @@ def confirm_next(state: State) -> str:
 }
 
 #Langgraph instructions for the agent
-def route_start(state: State) -> str:
+def route_to_tool_or_llm_for_processing(state: State) -> str:
     """If tools are waiting for confirmation route to execute_tool, otherwise route to tool_calling_llm."""
-    return "execute_tool" if state.get("pending_action") else "tool_calling_llm"
+    nextAction = "execute_tool" if state.get("pending_action") else "tool_calling_llm"
+    #print(f"debug: (route_to_tool_or_llm_for_processing) Routing to: {nextAction}")
+    return nextAction
 
-def route_to_tool(state: State) -> str:
+def route_confirmation_required_check(state: State) -> str:
+    """After the LLM calls a tool, route to confirmation_required to check to see if user for confirmation
+    is required before executing the tool."""
+    last_message = state["messages"][-1]
+    tool_calls = getattr(last_message, "tool_calls", None)
+
+    nextAction = "confirmation_required" if tool_calls else END
+    #print(f"debug: (route_confirmation_required_check) Routing to: {nextAction}")
+    return  nextAction
+
+def route_to_confirmation_or_tool(state: State) -> str:
     """If the LLM called a tool, route to the tool node to execute it, otherwise route back to waiting for the user's message."""
     pending_action = state.get("pending_action", [])
     action = pending_action[0] if pending_action else None
-    confirmed = action["confirmed"]
-    return "execute_tool" if confirmed == "true" else END
+    confirmed = action.get("confirmed") if action else None
+    nextAction = "execute_tool" if confirmed == "true" else "user_confirmation"
 
-def route_after_tool_call(state: State) -> str:
-    """After the LLM calls a tool, route to user_confirmation to ask the user for confirmation before executing the tool."""
-    last_message = state["messages"][-1]
-    tool_calls = getattr(last_message, "tool_calls", None)
-    return "user_confirmation" if tool_calls else END
+    #print(f"debug: (route_to_confirmation_or_tool) Routing to: {nextAction}")
+    return nextAction
 
 def route_after_execute_tool(state: State) -> str:
     """After asking the user for confirmation, route to execute_tool to either execute the tool or cancel based on user's response."""
     last_message = state["messages"][-1]
     tool_calls = getattr(last_message, "tool_calls", None)
-    return "tools" if tool_calls else END
+    nextAction = "tools" if tool_calls else END
+    #print(f"debug: (route_after_execute_tool) Routing to: {nextAction}")
+
+    return nextAction
 
 def route_after_execution(state: State) -> str:
     """After executing the tool, route back to the LLM to read the user's next message , if there are more tools
     ask a confirmation for the next one and decide on the next tool call."""
-    return "confirm_next" if state.get("pending_action") else "tool_calling_llm"
+    nextAction = "confirm_next" if state.get("pending_action") else "tool_calling_llm"
+    #print(f"debug: (route_after_execution) Routing to: {nextAction}")
+    return nextAction
 
 
     
@@ -259,6 +287,7 @@ def route_after_execution(state: State) -> str:
 #Graph construction
 graph = StateGraph(State)
 graph.add_node("tool_calling_llm", tool_calling_llm)
+graph.add_node("confirmation_required", tools_condition) #This is a condition node that checks whether the LLM called a tool and whether that tool call has been confirmed by the user, it routes accordingly
 graph.add_node("user_confirmation", user_confirmation)
 graph.add_node("execute_tool", execute_tool)
 graph.add_node("tools", tool_node)
@@ -266,11 +295,12 @@ graph.add_node("confirm_next", confirm_next)
 
 #The LLM calls the tools based on the user's message, 
 #A tool may not be called in every iteration, making these edges conditional based on whether the LLM decided to call a tool or not
-graph.add_conditional_edges(START, route_start, {"execute_tool": "execute_tool", "tool_calling_llm": "tool_calling_llm"})
-graph.add_conditional_edges("tool_calling_llm", route_after_tool_call, {"user_confirmation": "user_confirmation", END: END})
+graph.add_conditional_edges(START, route_to_tool_or_llm_for_processing, {"execute_tool": "execute_tool", "tool_calling_llm": "tool_calling_llm"})
+graph.add_conditional_edges("tool_calling_llm", route_confirmation_required_check, {"confirmation_required": "confirmation_required", END: END})
+graph.add_conditional_edges("confirmation_required", route_to_confirmation_or_tool, {"execute_tool": "execute_tool", "user_confirmation": "user_confirmation"})
 
 #After the LLM calls a tool, if there is a tool call, ask the user for confirmation, otherwise go back to waiting for the user's message
-graph.add_conditional_edges("user_confirmation", route_to_tool, {"execute_tool": "execute_tool", END: END})
+graph.add_edge("user_confirmation", END)
 
 #After asking the user for confirmation, if there is a tool call, execute the tool, otherwise go back to waiting for the user's message
 graph.add_conditional_edges("execute_tool", route_after_execute_tool, {"tools": "tools", END: END})
