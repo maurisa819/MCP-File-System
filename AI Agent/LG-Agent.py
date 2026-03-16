@@ -1,5 +1,6 @@
 from ast import main
 import asyncio
+import os
 
 
 from typing import Annotated, Dict, Any
@@ -99,9 +100,26 @@ def confirmation_check(user_input: str) -> str:
 
 # Get tool_call_id
 def get_tool_call_id(tool_call: dict) -> str:
-    """Generates a unique id for the tool call, in this case we get a hash of the tool name and arguments,
-      in a production system you might want to use a more robust method for generating unique ids."""
-    return f"{tool_call['name']}_{hash(frozenset(tool_call.get('args', {}).items()))}"
+    """Generates a stable id for the tool call.
+
+    For file-related tools, we key the confirmation by *folder* instead of the
+    full file path so that permission is asked only the first time a folder is
+    accessed. Subsequent accesses to any file in the same folder will reuse the
+    previous confirmation decision.
+    """
+    name = tool_call.get("name", "")
+    args = tool_call.get("args", {}) or {}
+
+    # For tools that operate on files, group confirmation by folder
+    file_name = args.get("file_name")
+    if isinstance(file_name, str):
+        folder = os.path.dirname(file_name) or os.path.sep
+        # Normalize folder path to avoid duplicates due to slashes, etc.
+        folder = os.path.normpath(folder)
+        return f"{name}_folder_{folder}"
+
+    # Default behavior: one confirmation per unique (name, args) combination
+    return f"{name}_{hash(frozenset(args.items()))}"
 
 confirmed_tool_calls = {} #This will hold the tool calls that have been confirmed by the user and are waiting to be executed
 def add_tool_confirmation_to_dict(id: str, args: dict, user_confirmation: str) -> str:
