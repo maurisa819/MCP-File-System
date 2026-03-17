@@ -333,18 +333,31 @@ graph.add_edge("tool_calling_llm", END)
 #Compile the graph with all nodes and edges to create the agent, and use the MemorySaver to save the state of the conversation
 graph = graph.compile(checkpointer=memory)
 
+def _load_agent_skills() -> str:
+    """Load agent skills from agent_skills.md for accurate demand→tool behavior."""
+    skills_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_skills.md")
+    try:
+        with open(skills_path, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
 async def main():
     print("LG-Agent running. Type 'quit' to exit.")
     config = {"configurable": {"thread_id": "1"}}
 
+    base_instructions = (
+        "You are an assistant that can use tools. "
+        "Only call tools when the user explicitly asks for file or OS actions "
+        "(list/read/create/delete/get os info). "
+        "If the user says hello or small talk, respond normally and do NOT call tools."
+    )
+    skills_text = _load_agent_skills()
+    system_content = base_instructions + ("\n\n" + skills_text if skills_text else "")
+
     state = {
         "messages": [
-            SystemMessage(content=(
-                "You are an assistant that can use tools. "
-                "Only call tools when the user explicitly asks for file or OS actions "
-                "(list/read/create/delete/get os info). "
-                "If the user says hello or small talk, respond normally and do NOT call tools."
-            ))
+            SystemMessage(content=system_content)
         ],
         "pending_action": []
     }
