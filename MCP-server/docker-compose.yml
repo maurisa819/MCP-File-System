@@ -19,10 +19,47 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
+    deploy:
+      resources:
+        limits:
+          cpus: "5.0"
+          memory: "8g"
+    environment:
+      - OLLAMA_KEEP_ALIVE=24
     ports:
       - "11434:11434"
     volumes:
       - ./ollama-data:/root/.ollama
+    networks:
+      - mcp-agent-ui
+    restart: unless-stopped
+
+  agent-server:
+    build: ../UI
+    container_name: agent-server
+    command: npx tsx src/server.ts
+    ports:
+      - "3001:3001"
+    environment:
+      - MCP_URL=http://mcp-server:8080/mcp
+      - OLLAMA_URL=http://ollama:11434
+    depends_on:
+      - mcp-server
+      - ollama
+    networks:
+      - mcp-agent-ui
+    restart: unless-stopped
+
+  ui:
+    build: ../UI
+    container_name: ui
+    command: npx vite --host 0.0.0.0
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://agent-server:3001
+    depends_on:
+      - agent-server
     networks:
       - mcp-agent-ui
     restart: unless-stopped

@@ -299,9 +299,6 @@ def route_after_execution(state: State) -> str:
     return nextAction
 
 
-    
-
-
 #Graph construction
 graph = StateGraph(State)
 graph.add_node("tool_calling_llm", tool_calling_llm)
