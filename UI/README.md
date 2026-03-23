@@ -30,22 +30,57 @@ UI/
 
 Make sure the MCP server is running on port 8080 and Ollama on port 11434 before starting.
 
-### 1. Install dependencies
+### Option A: FastAPI backend (Python)
+
+#### 1. Install Python dependencies
+
+```bash
+cd "AI Agent"
+pip install -r requirements.txt
+```
+
+#### 2. Start the FastAPI server
+
+```bash
+uvicorn api:app --port 3001
+```
+
+This starts the FastAPI server on **http://localhost:3001**. It exposes a `POST /api/chat` endpoint that forwards messages to the LangGraph agent.
+
+#### 3. Start the frontend (Vite dev server)
+
+In a separate terminal:
+
+```bash
+cd UI
+npm install
+npm run ui
+```
+
+This starts the Vite dev server on **http://localhost:5173**. API requests to `/api` are automatically proxied to the backend on port 3001.
+
+#### 4. Open the UI
+
+Go to **http://localhost:5173** in your browser.
+
+### Option B: Express backend (Node.js)
+
+#### 1. Install dependencies
 
 ```bash
 cd UI
 npm install
 ```
 
-### 2. Start the backend (Express API server)
+#### 2. Start the Express API server
 
 ```bash
 npm run server
 ```
 
-This starts the Express server on **http://localhost:3001**. It exposes a `POST /api/chat` endpoint that forwards messages to the LangGraph agent.
+This starts the Express server on **http://localhost:3001**.
 
-### 3. Start the frontend (Vite dev server)
+#### 3. Start the frontend
 
 In a separate terminal:
 
@@ -53,9 +88,7 @@ In a separate terminal:
 npm run ui
 ```
 
-This starts the Vite dev server on **http://localhost:5173**. API requests to `/api` are automatically proxied to the backend on port 3001.
-
-### 4. Open the UI
+#### 4. Open the UI
 
 Go to **http://localhost:5173** in your browser.
 
@@ -74,10 +107,12 @@ This starts:
 |----------------|------|--------------------------------------|
 | `mcp-server`   | 8080 | MCP tool server                      |
 | `ollama`       | 11434| Ollama LLM server                    |
-| `agent-server` | 3001 | Express API wrapping the LangGraph agent |
+| `agent-server` | 3001 | FastAPI server wrapping the LangGraph agent |
 | `ui`           | 5173 | Vite dev server (React frontend)     |
 
 Open **http://localhost:5173** once the containers are up.
+
+> NOTE: If you want to run the typescript version of the agent you will need to comment out the Python agent in the docker-compse.yaml file and un-comment the typescript version.
 
 ## Environment Variables
 
@@ -91,6 +126,15 @@ The agent server reads these env vars (with sensible defaults for local developm
 | `VITE_API_URL` | `http://localhost:3001`          | API proxy target (Vite)  |
 
 ## Available Scripts
+
+### Python (AI Agent)
+
+| Command | Description |
+|---------|-------------|
+| `uvicorn api:app --port 3001` | Start the FastAPI server |
+| `python LG-Agent.py` | Run the CLI agent |
+
+### Node.js (UI)
 
 | Script          | Command              | Description                          |
 |-----------------|----------------------|--------------------------------------|

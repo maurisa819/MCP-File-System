@@ -71,6 +71,7 @@ async function mcpTools(
   await client.connect(transport);
   try {
     const result = await client.callTool({ name: toolName, arguments: args });
+    console.log(`Tool call result for ${toolName}:`, result);
     if (result && typeof result === "object" && "content" in result) {
       if (Array.isArray(result.content)) {
         return result.content.map((item) => (item.text ? item.text : item)).join("\n");

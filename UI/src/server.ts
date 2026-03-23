@@ -9,6 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 app.post("/api/chat", async (req, res) => {
+  console.log("Received chat request:", req.body);
   const { threadId, message } = req.body;
 
   if (!message || typeof message !== "string") {

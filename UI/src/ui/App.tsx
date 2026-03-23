@@ -28,6 +28,9 @@ export default function App() {
     setLoading(true);
 
     try {
+      console.log("API URL:", API_URL);
+      console.log("Current thread ID:", THREAD_ID);
+      console.log("Sending message to agent server:", text);
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -38,7 +41,8 @@ export default function App() {
         ...prev,
         { role: "assistant", text: data.reply ?? "No response." },
       ]);
-    } catch {
+    } catch (error) {
+      console.error("Error sending message to agent server:", error);
       setMessages((prev) => [
         ...prev,
         { role: "assistant", text: "Error: could not reach the agent server." },
