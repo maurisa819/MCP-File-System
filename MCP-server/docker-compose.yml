@@ -10,8 +10,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
-      - ./source:/app/source:ro
-      - ./output:/app/output:rw
+      - ./source:/app/source:rw
     networks:
       - mcp-agent-ui
     restart: unless-stopped

@@ -142,7 +142,7 @@ def tools_condition_node(state: State):
     for tc in tool_calls:
         tool_call_id = get_tool_call_id(tc)
         record = confirmed_tool_calls.get(tool_call_id)
-        if record and record["user_confirmation"] == "confirm":
+        if tc["name"] != "delete_file" and record and record["user_confirmation"] == "confirm":
             pending_action = []
             for tc2 in tool_calls:
                 pending_action.append({

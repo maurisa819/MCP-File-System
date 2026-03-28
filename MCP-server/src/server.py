@@ -1,3 +1,5 @@
+from docx import Document
+from fpdf import FPDF
 from fastmcp import FastMCP
 import logging
 import os
@@ -10,8 +12,7 @@ logger = logging.getLogger("fastmcp.server")
 os.environ["SOURCE_DIR"] = os.path.join(os.getcwd(), "source")
 source_dir = os.environ["SOURCE_DIR"]
 
-os.environ["OUTPUT_DIR"] = os.path.join(os.getcwd(), "output")
-output_dir = os.environ["OUTPUT_DIR"]
+
 
 if not os.path.exists(source_dir):
     logger.info(f"Creating source directory at {source_dir}")
@@ -19,11 +20,7 @@ if not os.path.exists(source_dir):
 else:
     logger.info(f"Source directory already exists at {source_dir}")
 
-if not os.path.exists(output_dir):
-    logger.info(f"Creating output directory at {output_dir}")
-    os.makedirs(output_dir)
-else:
-    logger.info(f"Output directory already exists at {output_dir}")
+
 
 def set_working_directory(directory: str = None) -> str:
     """Sets the working directory for file operations.
@@ -104,7 +101,7 @@ def list_files(directory: str = source_dir) -> list:
         return []
     
 @mcp.tool("create_file")
-def create_file(file_name: str, content: str = "", directory: str = output_dir) -> str:
+def create_file(file_name: str, content: str = "", directory: str = source_dir) -> str:
     """Creates a new file with the specified content.
     
     params:
@@ -118,15 +115,37 @@ def create_file(file_name: str, content: str = "", directory: str = output_dir) 
     logger.info(f"Creating file {file_name} in directory {directory}")
     try:
         file_path = os.path.join(directory, file_name)
-        with open(file_path, 'w') as file:
-            file.write(content)
+        ext = os.path.splitext(file_name)[1].lower()
+
+        if ext == ".txt":
+            with open(file_path, "w", encoding="utf-8") as file:
+                file.write(content)
+
+        elif ext == ".docx":
+            doc = Document()
+            doc.add_paragraph(content)
+            doc.save(file_path)
+
+        elif ext == ".pdf":
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_auto_page_break(auto=True, margin=15)
+            pdf.set_font("Arial", size=12)
+            for line in content.splitlines():
+                pdf.multi_cell(0, 10, line)
+            pdf.output(file_path)
+
+        else:
+            return f"Unsupported file type: {ext}. Supported types are .txt, .docx, .pdf"
+
         return f"File '{file_name}' created successfully in '{directory}'."
+
     except Exception as e:
         logger.error(f"Error creating file {file_name} in {directory}: {e}")
         return f"Error creating file '{file_name}': {e}"
     
 @mcp.tool("delete_file")
-def delete_file(file_name: str, directory: str = output_dir) -> str:
+def delete_file(file_name: str, directory: str = source_dir) -> str:
     """Deletes a specified file.
     
     params:
