@@ -6,3 +6,4 @@ python-pptx>=0.6.23
 openpyxl>=3.1.0
 PyPDF2>=3.0.1
 fpdf2>=2.7.8
+fakeredis==2.32.1

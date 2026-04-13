@@ -162,6 +162,7 @@ def create_file(file_name: str, content: str = "", directory: str = SOURCE_DIR) 
 
     Supported output types:
     - .txt
+    - .md
     - .docx
     - .pdf
     """
@@ -171,7 +172,7 @@ def create_file(file_name: str, content: str = "", directory: str = SOURCE_DIR) 
         file_path = safe_join(directory, file_name)
         ext = os.path.splitext(file_name)[1].lower()
 
-        if ext == ".txt":
+        if ext in (".txt", ".md"):
             with open(file_path, "w", encoding="utf-8") as file:
                 file.write(content)
 
@@ -193,7 +194,7 @@ def create_file(file_name: str, content: str = "", directory: str = SOURCE_DIR) 
             pdf.output(file_path)
 
         else:
-            return f"Unsupported file type: {ext}. Supported types are .txt, .docx, .pdf"
+            return f"Unsupported file type: {ext}. Supported types are .txt, .md, .docx, .pdf"
 
         return f"File '{file_name}' created successfully in '{normalize_directory(directory)}'."
 

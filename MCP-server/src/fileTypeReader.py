@@ -28,7 +28,7 @@ class FileTypeReader:
             _, file_ext = os.path.splitext(file_name)
             file_ext = file_ext.lower()
 
-            if file_ext == ".txt":
+            if file_ext in (".txt", ".md"):
                 return self._clean_text(self._read_txt(file_path))
 
             elif file_ext == ".csv":

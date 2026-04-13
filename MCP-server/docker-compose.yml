@@ -34,7 +34,7 @@ services:
   #   restart: unless-stopped
 
   # Uncomment this section if you want to use the UI server 
-  #from the UI directory instead of the AI Agent directory. 
+  # from the UI directory instead of the AI Agent directory. 
   # Make sure to adjust the paths and ports accordingly.
   # agent-server:
   #   build: ../UI
