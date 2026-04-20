@@ -577,8 +577,8 @@ async def continue_pending_resolution(
                 return {"reply": "What would you like to name the new file?", "pendingAction": False}
 
             if output_file:
-                if not output_file.lower().endswith((".txt", ".docx", ".pdf")):
-                    return {"reply": "Output file must end in .txt, .docx, or .pdf", "pendingAction": False}
+                if not output_file.lower().endswith((".txt", ".docx", ".pdf", ".md")):
+                    return {"reply": "Output file must end in .txt, .docx, .pdf, or .md", "pendingAction": False}
                 reply = await create_file_response(mcp_client, output_file, summary)
                 last_output_by_thread[thread_id] = reply
                 return {"reply": reply, "pendingAction": False}
@@ -602,8 +602,8 @@ async def continue_pending_resolution(
                 return {"reply": "What would you like to name the new file?", "pendingAction": False}
 
             if output_file:
-                if not output_file.lower().endswith((".txt", ".docx", ".pdf")):
-                    return {"reply": "Output file must end in .txt, .docx, or .pdf", "pendingAction": False}
+                if not output_file.lower().endswith((".txt", ".docx", ".pdf", ".md")):
+                    return {"reply": "Output file must end in .txt, .docx, .pdf, or .md", "pendingAction": False}
                 reply = await create_file_response(mcp_client, output_file, comparison)
                 last_output_by_thread[thread_id] = reply
                 return {"reply": reply, "pendingAction": False}
@@ -700,8 +700,8 @@ async def handle_slash_command(
                 return {"reply": "What would you like to name the new file?", "pendingAction": False}
 
             if output_file:
-                if not output_file.lower().endswith((".txt", ".docx", ".pdf")):
-                    return {"reply": "Output file must end in .txt, .docx, or .pdf", "pendingAction": False}
+                if not output_file.lower().endswith((".txt", ".docx", ".pdf", ".md")):
+                    return {"reply": "Output file must end in .txt, .docx, .pdf, or .md", "pendingAction": False}
                 reply = await create_file_response(mcp_client, output_file, summary)
                 last_output_by_thread[thread_id] = reply
                 return {"reply": reply, "pendingAction": False}
@@ -769,8 +769,8 @@ async def handle_slash_command(
                 return {"reply": "What would you like to name the new file?", "pendingAction": False}
 
             if output_file:
-                if not output_file.lower().endswith((".txt", ".docx", ".pdf")):
-                    return {"reply": "Output file must end in .txt, .docx, or .pdf", "pendingAction": False}
+                if not output_file.lower().endswith((".txt", ".docx", ".pdf", ".md")):
+                    return {"reply": "Output file must end in .txt, .docx, .pdf, or .md", "pendingAction": False}
                 reply = await create_file_response(mcp_client, output_file, comparison)
                 last_output_by_thread[thread_id] = reply
                 return {"reply": reply, "pendingAction": False}
@@ -794,8 +794,8 @@ async def handle_slash_command(
         if not body:
             return {"reply": "Usage: /save <output.docx>", "pendingAction": False}
 
-        if not body.lower().endswith((".txt", ".docx", ".pdf")):
-            return {"reply": "Output file must end in .txt, .docx, or .pdf", "pendingAction": False}
+        if not body.lower().endswith((".txt", ".docx", ".pdf", ".md")):
+            return {"reply": "Output file must end in .txt, .docx, .pdf, or .md", "pendingAction": False}
 
         content = last_output_by_thread.get(thread_id, "")
         if not content:
@@ -823,8 +823,8 @@ async def handle_slash_command(
             return {"reply": "No previous output is available to save.", "pendingAction": False}
 
         if file_name:
-            if not file_name.lower().endswith((".txt", ".docx", ".pdf")):
-                return {"reply": "Output file must end in .txt, .docx, or .pdf", "pendingAction": False}
+            if not file_name.lower().endswith((".txt", ".docx", ".pdf", ".md")):
+                return {"reply": "Output file must end in .txt, .docx, .pdf, or .md", "pendingAction": False}
             reply = await create_file_response(mcp_client, file_name, content)
             last_output_by_thread[thread_id] = reply
             return {"reply": reply, "pendingAction": False}

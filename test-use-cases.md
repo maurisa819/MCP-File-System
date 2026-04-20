@@ -64,7 +64,7 @@
 - System deletes file from directory
 - Agent confirms deletion
 
-## UC 6: Summarize File
+## UC 5: Summarize File
 
 **Participating Actor:** initiated by User
 
@@ -79,7 +79,7 @@
 - LLM generates summary
 - Agent displays summary
 
-## UC 7: Summarize File and Save as New File
+## UC 6: Summarize File and Save as New File
 
 **Participating Actor:** initiated by User
 
@@ -95,7 +95,7 @@
 - System creates new file with summary
 - Agent confirms file creation
 
-## UC 8: Compare Two Files
+## UC 7: Compare Two Files
 
 **Participating Actor:** initiated by User
 
@@ -109,7 +109,7 @@
 - System retrieves both file contents
 - Agent displays comparison results
 
-## UC 9: Compare Two Files and Save as New file
+## UC 8: Compare Two Files and Save as New file
 
 **Participating Actor:** initiated by User
 
@@ -123,7 +123,7 @@
 - System retrieves both file contents
 - Agent confirms file creation
 
-## UC 10: Get System Information
+## UC 9: Get System Information
 
 **Participating Actor:** initiated by User
 
@@ -139,7 +139,7 @@
 - System retrieves OS details
 - Agent displays system information
 
-## UC 11: Confirm or Cancel Tool Execution
+## UC 10: Confirm or Cancel Tool Execution
 
 **Participating Actor:** initiated by User
 
@@ -155,7 +155,7 @@
 - If No → action is canceled
 - Agent responds accordingly
 
-## UC 12: Ask Questions About a File (Q&A)
+## UC 11: Ask Questions About a File (Q&A)
 
 **Participating Actor:** initiated by User
 
