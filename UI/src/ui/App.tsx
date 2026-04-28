@@ -3,59 +3,117 @@ import React, { useState, useRef, useEffect, FormEvent } from "react";
 interface Message {
   role: "user" | "assistant";
   text: string;
+  timestamp: number;
 }
+
+type InteractiveMessage =
+  | {
+      type: "confirmation";
+      displayText: string;
+    }
+  | {
+      type: "suggestion";
+      displayText: string;
+      suggestions: string[];
+    }
+  | {
+      type: "filename_prompt";
+      displayText: string;
+    };
 
 const API_URL = "/api/chat";
 const THREAD_ID = "ui-session-1";
 
-function parseConfirmationMessage(message: string) {
-  const deleteMatch = message.match(
-    /^Run 'delete_file' with \{'file_name': '(.+?)'\}\? \(yes\/no\)$/,
-  );
+function extractFileName(message: string) {
+  const match = message.match(/'file_name': '(.+?)'/);
+  return match ? match[1] : null;
+}
 
-  if (deleteMatch) {
+function parseConfirmationMessage(message: string): InteractiveMessage | null {
+  const isConfirmation =
+    /^Run(?: next tool)? '(.+?)' with .*?\? \(yes\/no\)$/.exec(message);
+
+  if (!isConfirmation) return null;
+
+  const toolName = isConfirmation[1];
+  const fileName = extractFileName(message);
+
+  if (toolName === "delete_file" && fileName) {
     return {
-      displayText: `Are you sure you want to delete ${deleteMatch[1]}?`,
+      type: "confirmation",
+      displayText: `Are you sure you want to delete ${fileName}?`,
     };
   }
 
-  const createMatch = message.match(
-    /^Run 'create_file' with \{.*'file_name': '(.+?)'.*\}\? \(yes\/no\)$/,
-  );
-
-  if (createMatch) {
+  if (toolName === "create_file" && fileName) {
     return {
-      displayText: `Do you want to create ${createMatch[1]}?`,
+      type: "confirmation",
+      displayText: `Do you want to create ${fileName}?`,
     };
   }
 
-  const readMatch = message.match(
-    /^Run 'get_file_content' with \{'file_name': '(.+?)'\}\? \(yes\/no\)$/,
-  );
-
-  if (readMatch) {
+  if (toolName === "get_file_content" && fileName) {
     return {
-      displayText: `Do you want the contents of ${readMatch[1]}?`,
+      type: "confirmation",
+      displayText: `Do you want the contents of ${fileName}?`,
     };
   }
 
-  const listMatch = message.match(/^Run 'list_files'.*\? \(yes\/no\)$/);
-
-  if (listMatch) {
+  if (toolName === "list_files") {
     return {
+      type: "confirmation",
       displayText: "Do you want to list the files?",
     };
   }
 
-  const osMatch = message.match(/^Run 'get_os_info'.*\? \(yes\/no\)$/);
-
-  if (osMatch) {
+  if (toolName === "get_os_info") {
     return {
+      type: "confirmation",
       displayText: "Do you want to view the operating system information?",
     };
   }
 
+  return {
+    type: "confirmation",
+    displayText: message,
+  };
+}
+
+function parseSuggestionMessage(message: string): InteractiveMessage | null {
+  const match = message.match(
+    /^File '(.+?)' not found\. Did you mean: (.+)\?$/,
+  );
+  if (!match) return null;
+
+  const suggestions = match[2]
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  return {
+    type: "suggestion",
+    displayText: "That file was not found. Try one of these:",
+    suggestions,
+  };
+}
+
+function parseFilenamePrompt(message: string): InteractiveMessage | null {
+  if (message.trim() === "What would you like to name the new file?") {
+    return {
+      type: "filename_prompt",
+      displayText: message,
+    };
+  }
+
   return null;
+}
+
+function parseInteractiveMessage(message: string): InteractiveMessage | null {
+  return (
+    parseConfirmationMessage(message) ||
+    parseSuggestionMessage(message) ||
+    parseFilenamePrompt(message)
+  );
 }
 
 export default function App() {
@@ -68,69 +126,71 @@ export default function App() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  async function handleSend(e: FormEvent) {
-    e.preventDefault();
-    const text = input.trim();
-    if (!text || loading) return;
+  const lastAssistantMessage = [...messages]
+    .reverse()
+    .find((m) => m.role === "assistant");
 
-    setMessages((prev) => [...prev, { role: "user", text }]);
-    setInput("");
+  const filenamePrompt =
+    lastAssistantMessage?.text.trim() ===
+    "What would you like to name the new file?";
+
+  async function sendMessage(text: string) {
+    if (!text.trim() || loading) return;
+
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", text, timestamp: Date.now() },
+    ]);
     setLoading(true);
 
     try {
-      console.log("API URL:", API_URL);
-      console.log("Current thread ID:", THREAD_ID);
-      console.log("Sending message to agent server:", text);
+
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ threadId: THREAD_ID, message: text }),
       });
+
       const data = await res.json();
+
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", text: data.reply ?? "No response." },
+        {
+          role: "assistant",
+          text: data.reply ?? "No response.",
+          timestamp: Date.now(),
+        },
       ]);
     } catch (error) {
       console.error("Error sending message to agent server:", error);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", text: "Error: could not reach the agent server." },
+        {
+          role: "assistant",
+          text: "Error: could not reach the agent server.",
+          timestamp: Date.now(),
+        },
       ]);
     } finally {
       setLoading(false);
     }
   }
 
+  async function handleSend(e: FormEvent) {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text || loading) return;
+
+    setInput("");
+    await sendMessage(text);
+  }
+
   async function sendQuickReply(text: "yes" | "no") {
-    if (loading) return;
+    await sendMessage(text);
+  }
 
-    setMessages((prev) => [...prev, { role: "user", text }]);
-    setLoading(true);
-
-    try {
-      console.log("API URL:", API_URL);
-      console.log("Current thread ID:", THREAD_ID);
-      console.log("Sending quick reply to agent server:", text);
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ threadId: THREAD_ID, message: text }),
-      });
-      const data = await res.json();
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", text: data.reply ?? "No response." },
-      ]);
-    } catch (error) {
-      console.error("Error sending quick reply to agent server:", error);
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", text: "Error: could not reach the agent server." },
-      ]);
-    } finally {
-      setLoading(false);
-    }
+  async function sendSuggestion(text: string) {
+    await sendMessage(text);
   }
 
   return (
@@ -141,9 +201,10 @@ export default function App() {
         {messages.length === 0 && (
           <p style={styles.placeholder}>Send a message to start chatting.</p>
         )}
+
         {messages.map((m, i) => {
-          const confirmation =
-            m.role === "assistant" ? parseConfirmationMessage(m.text) : null;
+          const interactive =
+            m.role === "assistant" ? parseInteractiveMessage(m.text) : null;
 
           return (
             <div
@@ -156,13 +217,15 @@ export default function App() {
               }}
             >
               <span style={styles.roleLabel}>
-                {m.role === "user" ? "You" : "Agent"}
+                {m.role === "user" ? "You" : "Agent"} •{" "}
+                {new Date(m.timestamp).toLocaleTimeString()}
               </span>
+
               <p style={styles.bubbleText}>
-                {confirmation ? confirmation.displayText : m.text}
+                {interactive ? interactive.displayText : m.text}
               </p>
 
-              {confirmation && (
+              {interactive?.type === "confirmation" && (
                 <div style={styles.confirmationButtons}>
                   <button
                     type="button"
@@ -182,15 +245,39 @@ export default function App() {
                   </button>
                 </div>
               )}
+
+              {interactive?.type === "suggestion" && (
+                <div style={styles.confirmationButtons}>
+                  {interactive.suggestions.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      style={styles.suggestionButton}
+                      onClick={() => sendSuggestion(suggestion)}
+                      disabled={loading}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {interactive?.type === "filename_prompt" && (
+                <div style={styles.promptHint}>
+                  Supported file types: .txt, .docx, .pdf
+                </div>
+              )}
             </div>
           );
         })}
+
         {loading && (
           <div style={{ ...styles.bubble, ...styles.assistantBubble }}>
             <span style={styles.roleLabel}>Agent</span>
             <p style={styles.bubbleText}>Thinking…</p>
           </div>
         )}
+
         <div ref={bottomRef} />
       </div>
 
@@ -199,7 +286,11 @@ export default function App() {
           style={styles.input}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message…"
+          placeholder={
+            filenamePrompt
+              ? "Enter a file name like summary.docx"
+              : "Type a message…"
+          }
           disabled={loading}
         />
         <button type="submit" style={styles.button} disabled={loading}>
@@ -264,7 +355,7 @@ const styles: Record<string, React.CSSProperties> = {
   roleLabel: {
     fontSize: "0.7rem",
     fontWeight: 700,
-    textTransform: "uppercase" as const,
+    textTransform: "uppercase",
     color: "#a6adc8",
     marginBottom: "2px",
     display: "block",
@@ -278,6 +369,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "8px",
     display: "flex",
     gap: "8px",
+    flexWrap: "wrap",
   },
   confirmButton: {
     padding: "6px 14px",
@@ -288,6 +380,21 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#1e1e2e",
     fontWeight: 600,
     cursor: "pointer",
+  },
+  suggestionButton: {
+    padding: "6px 12px",
+    fontSize: "0.9rem",
+    borderRadius: "999px",
+    border: "1px solid #89b4fa",
+    background: "transparent",
+    color: "#89b4fa",
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  promptHint: {
+    marginTop: "8px",
+    fontSize: "0.85rem",
+    color: "#a6adc8",
   },
   form: {
     display: "flex",

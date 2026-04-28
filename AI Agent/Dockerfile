@@ -9,6 +9,7 @@ RUN pip install --upgrade pip && \
 COPY agent.py .
 COPY api.py .
 COPY LG-Agent.py .
+COPY agent_helpers.py .
 
 EXPOSE 3001
 

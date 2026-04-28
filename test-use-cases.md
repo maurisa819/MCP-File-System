@@ -1,73 +1,173 @@
-# Test/Use Cases
+# Use Cases for MCP File System
 
-## General LLM interactions
+## UC 1: List Files
 
-### Use/Test Case 1
+**Participating Actor:** initiated by User
 
-#### Functionality
+**Entry Condition:** User is on the chat interface
 
-Interact with the LLM without using the MCP server tools
+**Exit Criteria:** A list of available files is displayed
 
-#### Steps
+**Flow of events:**
 
-1. Prompt LLM
-2. there should be now prompt to grant/deny access to a tool
+- User types “list files”
+- Agent prompts user for confirmation
+- User clicks Yes
+- System retrieves file list from directory
+- Agent displays files in the chat interface
 
-## MCP Server
+## UC 2: Read File Contents
 
-### Use/Test Case 1
+**Participating Actor:** initiated by User
 
-#### Functionality
+**Entry Condition:** File exists in directory
 
-Get a list of file the LLM has access to
+**Exit Criteria:** File contents are displayed to the user
 
-### Steps
+**Flow of events:**
 
-1. Prmopt LLM to get a list of file that it has access to
-2. The LLM should process the user input
-3. The Agent should prompt for access to use the List files MCP server tool
-    1. If granted permission a list of file should be displayed
-    2. if Denied nothing should be displayed.
+- User requests to read a file
+- Agent prompts for confirmation
+- User clicks Yes
+- System retrieves file content using file reader
+- Agent displays the file contents
 
-### Use/Test Case 2
+## UC 3: Create File
 
-#### Functionality
+**Participating Actor:** initiated by User
 
-Get the contents of a file
+**Entry Condition:** User is in chat interface
 
-#### Steps
+**Exit Criteria:** New file is created in the directory
 
-1. Prompt the LLM to get the contents of a file
-2. LLM processes user input
-3. The Agent should prompt for access to the MCP server tool
-    1. if granted access the server should return the contents of the file
-    2. if denied nothing should be returned
+**Flow of events:**
 
-### Use/Test Case 3
+- User requests to create a file with content
+- Agent prompts for confirmation
+- User clicks Yes
+- System creates file in directory
+- Agent confirms file creation
 
-#### Functionality
+## UC 4: Delete File
 
-Get contents of the file from Use/Test Case 2 agin
+**Participating Actor:** initiated by User
 
-#### Steps
+**Entry Condition:** File exists in directory
 
-1. Prompt the LLM to get the contents of the same file used in Test/Use Case 2
-2. LLM should process the users input
-3. Agent Actions
-    1. If permission was granted in Test/Use Case 2 then no prompt should be displayed and the contents of the file should be returned
-    2. If permission was denied in Test/Use Case 2 then the Agent should prompt for access to use the tool again
+**Exit Criteria:** File is removed from directory
 
-### Use/Test Case 4
+**Flow of events:**
 
-#### Functionality
+- User requests to delete a file
+- Agent prompts for confirmation
+- User clicks Yes
+- System deletes file from directory
+- Agent confirms deletion
 
-Getting the contents of multiple files
+## UC 5: Summarize File
 
-#### Steps
+**Participating Actor:** initiated by User
 
-1. Prompt the LLM to getht econtents of multiple files
-2. LLM will process the users input
-3. Agent will prompt for access to the file
-    1. If Granted access the contents will be retrieved
-    2. If denied nothing will be returned
-4. Step 3 is repeated for each file
+**Entry Condition:** File exists and is readable
+
+**Exit Criteria:** Summary of file is displayed
+
+**Flow of events:**
+
+- User requests to summarize a file (for example: /summarize file_name)
+- System retrieves file content
+- LLM generates summary
+- Agent displays summary
+
+## UC 6: Summarize File and Save as New File
+
+**Participating Actor:** initiated by User
+
+**Entry Condition:** File exists
+
+**Exit Criteria:** Summary file is created
+
+**Flow of events:**
+
+- User requests to summarize a file and save it (ex. /summarize file_name -> new_filename)
+- System retrieves file content
+- LLM generates summary
+- System creates new file with summary
+- Agent confirms file creation
+
+## UC 7: Compare Two Files
+
+**Participating Actor:** initiated by User
+
+**Entry Condition:** At least two files exist and are readable
+
+**Exit Criteria:** Comparison result is displayed to the user
+
+**Flow of events:**
+
+- User requests to compare two files (ex. /compare file1.docx and file2.docx)
+- System retrieves both file contents
+- Agent displays comparison results
+
+## UC 8: Compare Two Files and Save as New file
+
+**Participating Actor:** initiated by User
+
+**Entry Condition:** At least two files exist and are readable
+
+**Exit Criteria:** Comparison result is displayed to the user
+
+**Flow of events:**
+
+- User requests to compare two files (ex. /compare file1.docx and file2.docx -> compare.docx)
+- System retrieves both file contents
+- Agent confirms file creation
+
+## UC 9: Get System Information
+
+**Participating Actor:** initiated by User
+
+**Entry Condition:** User is in chat interface
+
+**Exit Criteria:** System information is displayed
+
+**Flow of events:**
+
+- User requests system information
+- Agent prompts for confirmation
+- User clicks Yes
+- System retrieves OS details
+- Agent displays system information
+
+## UC 10: Confirm or Cancel Tool Execution
+
+**Participating Actor:** initiated by User
+
+**Entry Condition:** Agent proposes a tool action
+
+**Exit Criteria:** Tool is executed or canceled
+
+**Flow of events:**
+
+- Agent asks for confirmation
+- User selects Yes or No
+- If Yes → tool executes
+- If No → action is canceled
+- Agent responds accordingly
+
+## UC 11: Ask Questions About a File (Q&A)
+
+**Participating Actor:** initiated by User
+
+**Entry Condition:** File exists
+
+**Exit Criteria:** Answer is generated based on file content
+
+**Flow of events:**
+
+- User asks a question about a file (ex. Based on file_name.pdf what is ...?)
+- Agent prompts for confirmation
+- User clicks Yes
+- System retrieves file content
+- LLM analyzes content
+- Agent returns answer based on the file
