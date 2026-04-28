@@ -1,4 +1,4 @@
-# My First MCP Server
+# File System MCP Server
 
 A simple Model Context Protocol (MCP) server built with FastMCP that provides utilities for OS information, file management, and text processing.
 
