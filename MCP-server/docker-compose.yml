@@ -15,46 +15,7 @@ services:
       - mcp-agent-ui
     restart: unless-stopped
 
-  # ollama:
-  #   image: ollama/ollama:latest
-  #   container_name: ollama
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: "5.0"
-  #         memory: "8g"
-  #   environment:
-  #     - OLLAMA_KEEP_ALIVE=24
-  #   ports:
-  #     - "11434:11434"
-  #   volumes:
-  #     - ./ollama-data:/root/.ollama
-  #   networks:
-  #     - mcp-agent-ui
-  #   restart: unless-stopped
 
-  # Uncomment this section if you want to use the UI server 
-  # from the UI directory instead of the AI Agent directory. 
-  # Make sure to adjust the paths and ports accordingly.
-  # agent-server:
-  #   build: ../UI
-  #   container_name: agent-server
-  #   command: npx tsx src/server.ts
-  #   ports:
-  #     - "3002:3001"
-  #   environment:
-  #     - MCP_URL=http://mcp-server:8080/mcp
-  #     - OLLAMA_URL=http://ollama:11434
-  #   depends_on:
-  #     - mcp-server
-  #     - ollama
-  #   networks:
-  #     - mcp-agent-ui
-  #   restart: unless-stopped
-
-  # This is the agent server from the AI Agent directory. It serves 
-  # as the backend for the UI and interacts with the MCP server and Ollama.
-  # Make sure to adjust the paths and ports if you switch to the UI server.
   agent-server:
     build: "../AI Agent"
     container_name: agent-server
