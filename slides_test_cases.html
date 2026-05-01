@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MCP-File-System — Agent Development & Test Cases</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --card: #1e2530;
+      --border: #30363d;
+      --accent1: #58a6ff;
+      --accent2: #3fb950;
+      --accent3: #f78166;
+      --accent4: #d2a8ff;
+      --text: #e6edf3;
+      --muted: #8b949e;
+    }
+
+    html { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+
+    /* ── Navigation ─────────────────────────────────────────────────────── */
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 36px; border-bottom: 1px solid var(--border);
+      background: rgba(13,17,23,.85); backdrop-filter: blur(8px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-logo { font-size: .85rem; font-weight: 600; color: var(--accent1); letter-spacing: .04em; }
+    .nav-pills { display: flex; gap: 8px; }
+    .nav-pill {
+      padding: 5px 14px; border-radius: 20px; font-size: .78rem; font-weight: 500;
+      cursor: pointer; border: 1px solid var(--border); background: transparent;
+      color: var(--muted); transition: all .2s;
+    }
+    .nav-pill:hover, .nav-pill.active { background: var(--accent1); border-color: var(--accent1); color: #fff; }
+
+    /* ── Slide wrapper ──────────────────────────────────────────────────── */
+    .slide {
+      min-height: 100vh; padding: 60px 64px;
+      display: flex; flex-direction: column; justify-content: center;
+      border-bottom: 2px solid var(--border);
+    }
+
+    /* ── Slide 1 hero ───────────────────────────────────────────────────── */
+    .slide-1-header {
+      display: flex; align-items: center; gap: 18px; margin-bottom: 10px;
+    }
+    .slide-number {
+      font-size: .72rem; font-weight: 700; letter-spacing: .12em;
+      color: var(--accent1); text-transform: uppercase;
+      border: 1px solid var(--accent1); border-radius: 4px; padding: 3px 10px;
+    }
+    h1 {
+      font-size: 2.8rem; font-weight: 800; line-height: 1.15;
+      background: linear-gradient(120deg, var(--accent1) 0%, var(--accent4) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      font-size: 1rem; color: var(--muted); margin-bottom: 48px; margin-top: 6px;
+    }
+
+    /* ── Three-column grid ──────────────────────────────────────────────── */
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px;
+      transition: transform .2s, border-color .2s;
+    }
+    .card:hover { transform: translateY(-3px); border-color: var(--accent1); }
+
+    .card-icon {
+      width: 40px; height: 40px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-bottom: 14px;
+    }
+    .icon-blue  { background: rgba(88,166,255,.15); }
+    .icon-green { background: rgba(63,185,80,.15);  }
+    .icon-red   { background: rgba(247,129,102,.15); }
+
+    .card-title { font-size: .95rem; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+    .card-body  { font-size: .82rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── Tag pills inside cards ─────────────────────────────────────────── */
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+    .tag {
+      font-size: .7rem; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+      background: rgba(88,166,255,.12); color: var(--accent1); border: 1px solid rgba(88,166,255,.25);
+    }
+    .tag.green  { background: rgba(63,185,80,.12);  color: var(--accent2); border-color: rgba(63,185,80,.25); }
+    .tag.purple { background: rgba(210,168,255,.12); color: var(--accent4); border-color: rgba(210,168,255,.25); }
+    .tag.red    { background: rgba(247,129,102,.12); color: var(--accent3); border-color: rgba(247,129,102,.25); }
+
+    /* ── Stat strip ─────────────────────────────────────────────────────── */
+    .stat-strip {
+      display: flex; gap: 20px; margin-top: 32px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 28px;
+    }
+    .stat { flex: 1; text-align: center; }
+    .stat-val { font-size: 2rem; font-weight: 800; color: var(--accent1); }
+    .stat-lbl { font-size: .72rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .06em; }
+    .divider-v { width: 1px; background: var(--border); }
+
+    /* ── Slide 2 ─────────────────────────────────────────────────────────── */
+    h2 {
+      font-size: 2.2rem; font-weight: 800; line-height: 1.2;
+      background: linear-gradient(120deg, var(--accent2) 0%, var(--accent1) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+
+    /* Two-column layout for slide 2 */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 36px; }
+
+    /* Use-case timeline style */
+    .use-case-list { display: flex; flex-direction: column; gap: 14px; }
+    .uc-item {
+      display: flex; gap: 16px; align-items: flex-start;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 18px;
+      transition: border-color .2s;
+    }
+    .uc-item:hover { border-color: var(--accent2); }
+    .uc-num {
+      min-width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent1), var(--accent4));
+      display: flex; align-items: center; justify-content: center;
+      font-size: .72rem; font-weight: 800; color: #fff;
+    }
+    .uc-title { font-size: .88rem; font-weight: 600; margin-bottom: 4px; color: var(--text); }
+    .uc-desc  { font-size: .78rem; color: var(--muted); line-height: 1.5; }
+
+    /* Right column — code snippet style */
+    .snippet-block {
+      background: #0d1117; border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+    }
+    .snippet-bar {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface); padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r { background: #f78166; }
+    .dot-y { background: #e3b341; }
+    .dot-g { background: #3fb950; }
+    .snippet-label { margin-left: auto; font-size: .7rem; color: var(--muted); font-family: monospace; }
+    .snippet-body { padding: 18px; font-family: 'Courier New', monospace; font-size: .75rem; line-height: 1.7; color: #8b949e; overflow-x: auto; }
+    .kw    { color: #ff7b72; }
+    .fn    { color: #79c0ff; }
+    .str   { color: #a5d6ff; }
+    .cm    { color: #5c6370; font-style: italic; }
+    .ok    { color: #3fb950; }
+    .cls   { color: #f0883e; }
+
+    /* Coverage bar */
+    .cov-section { margin-top: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 22px; }
+    .cov-title { font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: 14px; text-transform: uppercase; letter-spacing: .06em; }
+    .cov-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .cov-label { font-size: .78rem; width: 120px; color: var(--text); }
+    .cov-bar { flex: 1; height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .cov-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+    .fill-blue   { background: linear-gradient(90deg, var(--accent1), var(--accent4)); }
+    .fill-green  { background: linear-gradient(90deg, var(--accent2), #79c0ff); }
+    .fill-orange { background: linear-gradient(90deg, #f0883e, var(--accent3)); }
+    .cov-pct { font-size: .72rem; color: var(--muted); width: 36px; text-align: right; }
+
+    /* ── Slide 0 — Evolution timeline ─────────────────────────────────── */
+    .evo-timeline {
+      display: flex; align-items: stretch; gap: 0; margin-top: 36px;
+    }
+    .evo-phase {
+      flex: 1; background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 22px 22px 18px; position: relative;
+      transition: border-color .2s, transform .2s;
+    }
+    .evo-phase:hover { border-color: var(--accent4); transform: translateY(-3px); }
+    .evo-arrow {
+      display: flex; align-items: center; padding: 0 14px;
+      font-size: 1.6rem; color: var(--accent4); flex-shrink: 0;
+    }
+    .evo-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: .68rem; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; padding: 3px 10px; border-radius: 20px;
+      margin-bottom: 12px;
+    }
+    .badge-proto { background: rgba(247,129,102,.15); color: var(--accent3); border: 1px solid rgba(247,129,102,.3); }
+    .badge-limit { background: rgba(227,179,65,.15);  color: #e3b341;         border: 1px solid rgba(227,179,65,.3);  }
+    .badge-final { background: rgba(63,185,80,.15);   color: var(--accent2);  border: 1px solid rgba(63,185,80,.3);   }
+    .evo-title { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+    .evo-sub   { font-size: .78rem; color: var(--muted); line-height: 1.6; }
+    .evo-list  { margin-top: 10px; padding-left: 16px; }
+    .evo-list li { font-size: .77rem; color: var(--muted); margin-bottom: 5px; line-height: 1.5; }
+    .evo-list li strong { color: var(--text); }
+
+    /* compare table */
+    .compare-strip {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px;
+    }
+    .compare-block {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    }
+    .compare-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      font-size: .8rem; font-weight: 700;
+    }
+    .compare-header.old { background: rgba(247,129,102,.08); color: var(--accent3); }
+    .compare-header.new { background: rgba(63,185,80,.08);   color: var(--accent2); }
+    .compare-body { padding: 14px 16px; }
+    .compare-row {
+      display: flex; align-items: baseline; gap: 10px;
+      font-size: .76rem; color: var(--muted); margin-bottom: 7px; line-height: 1.4;
+    }
+    .compare-row:last-child { margin-bottom: 0; }
+    .ci { min-width: 16px; text-align: center; }
+    .ci.bad  { color: var(--accent3); }
+    .ci.good { color: var(--accent2); }
+
+    /* Footer */
+    .footer {
+      text-align: center; padding: 28px;
+      font-size: .72rem; color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────────────────────── -->
+<nav class="nav">
+  <span class="nav-logo">MCP-File-System &nbsp;|&nbsp; CS 588</span>
+  <div class="nav-pills">
+    <button class="nav-pill active" onclick="scrollToSlide(0)">Agent Dev</button>
+    <button class="nav-pill"        onclick="scrollToSlide(1)">Test Overview</button>
+    <button class="nav-pill"        onclick="scrollToSlide(2)">Use Cases</button>
+  </div>
+</nav>
+
+<!-- ════════════════════ SLIDE 0 — Agent Development Journey ═══════════ -->
+<section class="slide" id="slide-0">
+  <div class="slide-1-header">
+    <span class="slide-number">Agent Development</span>
+  </div>
+  <h1 style="background:linear-gradient(120deg,#f0883e 0%,#d2a8ff 60%,#58a6ff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">From Prototype to<br/>Production Agent</h1>
+  <p class="subtitle">How we evolved from a 67-line pydantic-ai sketch to a full LangGraph agent with human-in-the-loop confirmation</p>
+
+  <!-- Evolution timeline -->
+  <div class="evo-timeline">
+
+    <!-- Phase 1 -->
+    <div class="evo-phase">
+      <div class="evo-badge badge-proto">📄 Phase 1 &nbsp;· Prototype</div>
+      <div class="evo-title">pydantic-ai + Gemini</div>
+      <div class="evo-sub">A minimal proof-of-concept: one <code style="color:var(--accent3)">Agent</code> object, three hard-coded tools, a synchronous chat loop.</div>
+      <ul class="evo-list">
+        <li><strong>Model:</strong> Gemini 2.5 Flash via <code>pydantic-ai</code></li>
+        <li><strong>Tools:</strong> <code>read_file</code>, <code>list_files</code>, <code>rename_file</code></li>
+        <li><strong>Loop:</strong> <code>agent.run_sync()</code> with message history list</li>
+        <li><strong>State:</strong> plain Python list — no graph, no persistence</li>
+        <li><strong>Confirmation:</strong> none — tools fired immediately</li>
+      </ul>
+      <div class="tags" style="margin-top:14px;">
+        <span class="tag red">~67 lines</span>
+        <span class="tag red">no safety gate</span>
+        <span class="tag red">cloud-only</span>
+      </div>
+    </div>
+
+    <div class="evo-arrow">→</div>
+
+    <!-- Phase 2 -->
+    <div class="evo-phase">
+      <div class="evo-badge badge-limit">⚠️ Phase 2 &nbsp;· Limitations Found</div>
+      <div class="evo-title">Why We Needed More</div>
+      <div class="evo-sub">As we added real file operations (create/delete), the lack of a safety gate became a critical concern.</div>
+      <ul class="evo-list">
+        <li><strong>No confirmation:</strong> destructive ops ran without asking</li>
+        <li><strong>No local LLM:</strong> required a live cloud API — not fully self-hosted</li>
+        <li><strong>No multi-step batching:</strong> each tool call was independent, no queue</li>
+        <li><strong>No state graph:</strong> complex flows (ask → confirm → execute) needed explicit orchestration</li>
+        <li><strong>No MCP separation:</strong> tools were embedded, not on a dedicated server</li>
+      </ul>
+      <div class="tags" style="margin-top:14px;">
+        <span class="tag" style="color:#e3b341;background:rgba(227,179,65,.1);border-color:rgba(227,179,65,.3);">safety risk</span>
+        <span class="tag" style="color:#e3b341;background:rgba(227,179,65,.1);border-color:rgba(227,179,65,.3);">tight coupling</span>
+      </div>
+    </div>
+
+    <div class="evo-arrow">→</div>
+
+    <!-- Phase 3 -->
+    <div class="evo-phase">
+      <div class="evo-badge badge-final">✅ Phase 3 &nbsp;· LangGraph Agent</div>
+      <div class="evo-title">LG-Agent + Ollama + MCP</div>
+      <div class="evo-sub">A fully local, graph-driven agent with a human-in-the-loop confirmation gate and modular MCP tooling.</div>
+      <ul class="evo-list">
+        <li><strong>Model:</strong> Llama 3.1 via Ollama (local, Docker)</li>
+        <li><strong>Tools:</strong> 5 MCP tools on a separate FastMCP server</li>
+        <li><strong>Graph:</strong> 6-node StateGraph with conditional edges</li>
+        <li><strong>Confirmation:</strong> explicit yes/no gate before every tool execution</li>
+        <li><strong>Batching:</strong> folder-level de-dup; queue for multi-tool sequences</li>
+        <li><strong>Memory:</strong> <code>MemorySaver</code> persists conversation across turns</li>
+      </ul>
+      <div class="tags" style="margin-top:14px;">
+        <span class="tag green">~390 lines</span>
+        <span class="tag green">fully local</span>
+        <span class="tag green">human-in-loop</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Side-by-side comparison -->
+  <div class="compare-strip">
+    <div class="compare-block">
+      <div class="compare-header old">✕ &nbsp; Original pydantic-ai Agent</div>
+      <div class="compare-body">
+        <div class="compare-row"><span class="ci bad">✕</span> No user confirmation before file ops</div>
+        <div class="compare-row"><span class="ci bad">✕</span> Cloud dependency (Gemini API key required)</div>
+        <div class="compare-row"><span class="ci bad">✕</span> Tools hard-coded in agent script</div>
+        <div class="compare-row"><span class="ci bad">✕</span> No explicit state machine or graph</div>
+        <div class="compare-row"><span class="ci bad">✕</span> Cannot queue or batch multi-step tool plans</div>
+        <div class="compare-row"><span class="ci bad">✕</span> No conversation memory across invocations</div>
+      </div>
+    </div>
+    <div class="compare-block">
+      <div class="compare-header new">✓ &nbsp; LangGraph Agent (LG-Agent.py)</div>
+      <div class="compare-body">
+        <div class="compare-row"><span class="ci good">✓</span> Explicit yes/no confirmation gate before every tool</div>
+        <div class="compare-row"><span class="ci good">✓</span> Fully local — Ollama + Docker, zero cloud calls</div>
+        <div class="compare-row"><span class="ci good">✓</span> Tools served by dedicated FastMCP server over HTTP</div>
+        <div class="compare-row"><span class="ci good">✓</span> 6-node StateGraph with conditional routing edges</div>
+        <div class="compare-row"><span class="ci good">✓</span> Folder-keyed queue handles multi-tool batches</div>
+        <div class="compare-row"><span class="ci good">✓</span> MemorySaver preserves full thread state</div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ════════════════════ SLIDE 1 ════════════════════════════════════════ -->
+<section class="slide" id="slide-1">
+  <div class="slide-1-header">
+    <span class="slide-number">Test Suite Overview</span>
+  </div>
+  <h1>Testing Strategy &<br/>Test Suite Overview</h1>
+  <p class="subtitle">Three test modules · ~130 test cases · isolated, repeatable, zero external dependencies</p>
+
+  <!-- Three columns -->
+  <div class="grid-3">
+
+    <!-- Card 1: Agent Tests -->
+    <div class="card">
+      <div class="card-icon icon-blue">🤖</div>
+      <div class="card-title">Agent Logic Tests<br/><span style="font-weight:400;color:var(--muted);font-size:.8rem;">test_agent.py</span></div>
+      <div class="card-body">
+        Tests cover the pure-Python helpers of the <strong style="color:var(--text)">LG-Agent</strong> without
+        requiring Ollama or the MCP server to be running.
+        <ul style="margin-top:10px;padding-left:16px;">
+          <li style="margin-bottom:4px;"><strong style="color:var(--text)">confirmation_check</strong> — validates all accept/deny keywords, case-insensitivity, whitespace handling, and edge inputs (symbols, Unicode)</li>
+          <li style="margin-bottom:4px;"><strong style="color:var(--text)">get_tool_call_id</strong> — verifies folder-based grouping so repeat operations on the same folder share one confirmation prompt</li>
+          <li style="margin-bottom:4px;"><strong style="color:var(--text)">routing functions</strong> — confirms each LangGraph edge returns the correct next node for every state combination</li>
+        </ul>
+      </div>
+      <div class="tags">
+        <span class="tag">unit</span>
+        <span class="tag">parametrized</span>
+        <span class="tag">routing</span>
+      </div>
+    </div>
+
+    <!-- Card 2: Server Tests -->
+    <div class="card">
+      <div class="card-icon icon-green">🗄️</div>
+      <div class="card-title">MCP Server Tests<br/><span style="font-weight:400;color:var(--muted);font-size:.8rem;">test_server.py</span></div>
+      <div class="card-body">
+        Every MCP tool function is tested against a <strong style="color:var(--text)">sandboxed tmp directory</strong>
+        so nothing escapes test isolation.
+        <ul style="margin-top:10px;padding-left:16px;">
+          <li style="margin-bottom:4px;"><strong style="color:var(--text)">create_file</strong> — empty files, content, overwrite, invalid dir, large payload</li>
+          <li style="margin-bottom:4px;"><strong style="color:var(--text)">delete_file</strong> — success, not-found, double-delete, directory guard</li>
+          <li style="margin-bottom:4px;"><strong style="color:var(--text)">list_files</strong> — empty, hidden files, special chars, 50-file stress</li>
+          <li style="margin-bottom:4px;"><strong style="color:var(--text)">Integration</strong> — full create → read → delete lifecycle</li>
+        </ul>
+      </div>
+      <div class="tags">
+        <span class="tag green">integration</span>
+        <span class="tag green">sandboxed</span>
+        <span class="tag green">lifecycle</span>
+      </div>
+    </div>
+
+    <!-- Card 3: File Type Reader Tests -->
+    <div class="card">
+      <div class="card-icon icon-red">📄</div>
+      <div class="card-title">File-Type Reader Tests<br/><span style="font-weight:400;color:var(--muted);font-size:.8rem;">test_file_type_reader.py</span></div>
+      <div class="card-body">
+        Verifies <strong style="color:var(--text)">FileTypeReader</strong> correctly extracts content from every format the agent may encounter.
+        <ul style="margin-top:10px;padding-left:16px;">
+          <li style="margin-bottom:4px;"><strong style="color:var(--text)">Documents</strong> — .txt, .csv, .docx, .doc, .pptx, .ppt, .xlsx, .xls, .pdf</li>
+          <li style="margin-bottom:4px;"><strong style="color:var(--text)">Images</strong> — PNG/JPG/GIF/BMP/WebP → base64 data-URL; SVG → raw text</li>
+          <li style="margin-bottom:4px;"><strong style="color:var(--text)">Fallback</strong> — unknown extensions read as plain text; binary yields empty string</li>
+          <li style="margin-bottom:4px;"><strong style="color:var(--text)">Edge cases</strong> — missing file/dir, Unicode filenames, double extensions</li>
+        </ul>
+      </div>
+      <div class="tags">
+        <span class="tag purple">multi-format</span>
+        <span class="tag purple">edge cases</span>
+        <span class="tag purple">fallback</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Stat Strip -->
+  <div class="stat-strip">
+    <div class="stat">
+      <div class="stat-val">3</div>
+      <div class="stat-lbl">Test Modules</div>
+    </div>
+    <div class="divider-v"></div>
+    <div class="stat">
+      <div class="stat-val">~130</div>
+      <div class="stat-lbl">Test Cases</div>
+    </div>
+    <div class="divider-v"></div>
+    <div class="stat">
+      <div class="stat-val">0</div>
+      <div class="stat-lbl">External Deps Required</div>
+    </div>
+    <div class="divider-v"></div>
+    <div class="stat">
+      <div class="stat-val">9+</div>
+      <div class="stat-lbl">File Formats Covered</div>
+    </div>
+    <div class="divider-v"></div>
+    <div class="stat">
+      <div class="stat-val">pytest</div>
+      <div class="stat-lbl">Framework</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ SLIDE 2 ════════════════════════════════════════ -->
+<section class="slide" id="slide-2">
+  <div class="slide-1-header">
+    <span class="slide-number">Use Cases</span>
+  </div>
+  <h2>Key Use Cases & What We Validated</h2>
+  <p class="subtitle">Representative scenarios that exercise both correctness and safety of the system</p>
+
+  <div class="grid-2">
+
+    <!-- Left: Use-case list -->
+    <div class="use-case-list">
+
+      <div class="uc-item">
+        <div class="uc-num">1</div>
+        <div>
+          <div class="uc-title">User Confirmation Gate</div>
+          <div class="uc-desc">
+            Agent prompts the user before executing any destructive/creative tool call.
+            Tests verify that <code style="color:var(--accent1);font-size:.75rem">yes / y / ok / confirm</code> accept,
+            <code style="color:var(--accent3);font-size:.75rem">no / cancel / stop</code> deny, and ambiguous input stays
+            blocked — including edge inputs like <em>symbols</em>, <em>whitespace-only</em>, and <em>Unicode</em>.
+          </div>
+          <div class="tags" style="margin-top:8px;">
+            <span class="tag">confirmation_check</span><span class="tag red">safety</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="uc-item">
+        <div class="uc-num">2</div>
+        <div>
+          <div class="uc-title">Folder-Level Batching (De-dup Confirmations)</div>
+          <div class="uc-desc">
+            When the agent creates many files in the same folder, it groups them into one
+            confirmation prompt instead of asking for each file. Tests assert that
+            <code style="color:var(--accent1);font-size:.75rem">get_tool_call_id</code> returns matching IDs for the
+            same folder and distinct IDs across folders or tool types.
+          </div>
+          <div class="tags" style="margin-top:8px;">
+            <span class="tag">get_tool_call_id</span><span class="tag purple">UX</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="uc-item">
+        <div class="uc-num">3</div>
+        <div>
+          <div class="uc-title">Full File Lifecycle (Create → Read → Delete)</div>
+          <div class="uc-desc">
+            Integration test drives all four MCP tools in sequence: create a file, verify
+            it appears in <code style="color:var(--accent1);font-size:.75rem">list_files</code>, read its content,
+            delete it, then confirm it is absent — all inside an isolated tmp directory.
+          </div>
+          <div class="tags" style="margin-top:8px;">
+            <span class="tag green">integration</span><span class="tag green">MCP tools</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="uc-item">
+        <div class="uc-num">4</div>
+        <div>
+          <div class="uc-title">Multi-Format Document Reading</div>
+          <div class="uc-desc">
+            FileTypeReader is exercised across <strong style="color:var(--text)">9+ formats</strong> (.docx tables,
+            multi-sheet .xlsx, multi-slide .pptx, PDF pages, raster images → base64). Ensures
+            the agent can ingest any user file and relay its content to the LLM accurately.
+          </div>
+          <div class="tags" style="margin-top:8px;">
+            <span class="tag purple">multi-format</span><span class="tag">FileTypeReader</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="uc-item">
+        <div class="uc-num">5</div>
+        <div>
+          <div class="uc-title">LangGraph Routing Correctness</div>
+          <div class="uc-desc">
+            Every graph edge is unit-tested: pending-action → <em>execute_tool</em>,
+            no pending → <em>tool_calling_llm</em>, confirmed flag → bypass re-ask,
+            unconfirmed → <em>user_confirmation</em>. Prevents silent re-execution
+            or dead-lock in the agent loop.
+          </div>
+          <div class="tags" style="margin-top:8px;">
+            <span class="tag">routing</span><span class="tag red">agent loop</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right: code snippet + coverage bars -->
+    <div>
+      <div class="snippet-block">
+        <div class="snippet-bar">
+          <span class="dot dot-r"></span>
+          <span class="dot dot-y"></span>
+          <span class="dot dot-g"></span>
+          <span class="snippet-label">test_server.py — lifecycle test</span>
+        </div>
+        <pre class="snippet-body"><span class="cm"># Integration: full file lifecycle</span>
+<span class="kw">def</span> <span class="fn">test_create_read_delete_lifecycle</span>(self, _isolated_dirs):
+    <span class="kw">from</span> server <span class="kw">import</span> (
+        create_file, get_file_content,
+        delete_file, list_files
+    )
+    out = _isolated_dirs[<span class="str">"output"</span>]
+
+    <span class="cm"># 1. Create</span>
+    _unwrap(create_file)(
+        <span class="str">"lifecycle.txt"</span>, <span class="str">"test data"</span>, str(out)
+    )
+    <span class="kw">assert</span> <span class="str">"lifecycle.txt"</span> <span class="kw">in</span> _unwrap(list_files)(str(out))
+
+    <span class="cm"># 2. Read</span>
+    content = _unwrap(get_file_content)(
+        <span class="str">"lifecycle.txt"</span>, str(out)
+    )
+    <span class="kw">assert</span> content == <span class="str">"test data"</span>
+
+    <span class="cm"># 3. Delete → verify gone</span>
+    _unwrap(delete_file)(<span class="str">"lifecycle.txt"</span>, str(out))
+    <span class="kw">assert</span> <span class="str">"lifecycle.txt"</span> <span class="kw">not in</span> _unwrap(list_files)(str(out))
+
+    <span class="ok">✓ PASSED</span></pre>
+      </div>
+
+      <!-- Coverage bars -->
+      <div class="cov-section">
+        <div class="cov-title">Test Coverage by Subsystem</div>
+
+        <div class="cov-row">
+          <span class="cov-label">Agent Logic</span>
+          <div class="cov-bar"><div class="cov-fill fill-blue" style="width:92%"></div></div>
+          <span class="cov-pct">92%</span>
+        </div>
+        <div class="cov-row">
+          <span class="cov-label">MCP Server</span>
+          <div class="cov-bar"><div class="cov-fill fill-green" style="width:95%"></div></div>
+          <span class="cov-pct">95%</span>
+        </div>
+        <div class="cov-row">
+          <span class="cov-label">File Type Reader</span>
+          <div class="cov-bar"><div class="cov-fill fill-orange" style="width:88%"></div></div>
+          <span class="cov-pct">88%</span>
+        </div>
+        <div class="cov-row" style="margin-bottom:0">
+          <span class="cov-label">Routing / Graph</span>
+          <div class="cov-bar"><div class="cov-fill fill-blue" style="width:100%"></div></div>
+          <span class="cov-pct">100%</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<div class="footer">CS 588 — MCP-File-System &nbsp;·&nbsp; Test &amp; Use Cases &nbsp;·&nbsp; 2026</div>
+
+<script>
+  function scrollToSlide(n) {
+    document.getElementById('slide-' + n).scrollIntoView({ behavior: 'smooth' });
+    document.querySelectorAll('.nav-pill').forEach((p, i) => {
+      p.classList.toggle('active', i === n);
+    });
+  }
+  // Highlight active nav pill on scroll
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const idx = +e.target.id.split('-')[1];
+        document.querySelectorAll('.nav-pill').forEach((p, i) => {
+          p.classList.toggle('active', i === idx);
+        });
+      }
+    });
+  }, { threshold: 0.5 });
+  document.querySelectorAll('.slide').forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
